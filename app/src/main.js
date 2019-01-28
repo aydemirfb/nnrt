@@ -1,5 +1,6 @@
-
 joint.setTheme('bpmn');
+const fs = require('fs');
+const fileDialog = require('file-dialog');
 
 var example = window.example;
 var gdAuth = window.gdAuth;
@@ -7,6 +8,7 @@ var gdLoad = window.gdLoad;
 var gdSave = window.gdSave;
 var inputs = window.inputs;
 var toolbarConfig= window.toolbarConfig;
+const modelsdir = '../models/';
 
 var graph = new joint.dia.Graph({ type: 'bpmn' });
 
@@ -437,8 +439,8 @@ function smtize() {
     funs = funs.sort();
 
     // SMT output start
-
-    smtOutput += `;; activate model generation\r\n(set-option :produce-models true)\r\n\r\n`
+    smtOutput = ''
+    smtOutput += `;; activate model generation\r\n(set-option :produce-models true)\r\n(set-option :opt.priority lex)\r\n`
 
     // Declaration of Goal, Assumption and Refinement Propostions
 
@@ -561,7 +563,7 @@ function smtize() {
         if (c.relation === 'EXC') {
             smtOutput += `(assert (not (and ${c.from} ${c.to})))\r\n`;
         } else if (c.relation === 'PRE') {
-            smtOutput += `(assert (=> (${c.to} ${c.from})))\r\n`;
+            smtOutput += `(assert (=> ${c.to} ${c.from}))\r\n`;
         } else {
             smtOutput += `(assert (= ${c.name} (and ${c.from} ${c.to})))\r\n`;
             if (c.weight === 'undefined') {
@@ -636,14 +638,14 @@ function smtize() {
 
     if (leafs.length < 1) {
         optimization = `
-    ;;%%
-    ;;Optimization:
-    ;;%%
-    (minimize unsat_requirements)
-    (check-sat)
-    (load-objective-model 0)
-    (get-model)
-    (exit)`
+    ;;%%\r\n
+    ;;Optimization:\r\n
+    ;;%%\r\n
+    (minimize unsat_requirements)\r\n
+    (check-sat)\r\n
+    (load-objective-model 0)\r\n
+    (get-model)\r\n
+    (exit)\r\n`
     } else {
         optimization = `
     ;;%%
@@ -740,11 +742,45 @@ var toolbarCommands = {
         //jsonWindow.document.write(JSON.stringify(graph.toJSON()));
 
         jsonOfGraph = graph.toJSON();
+	var jsonString = JSON.stringify(graph.toJSON());
 
         // Main function works here
         smtize();
+	//if (document.getElementById('fileName').value === '' || typeof document.getElementById('fileName').value === 'undefined') {
+        //    download(jsonString, 'output.json', 'text');
+        //} else {
+        //    download(jsonString, document.getElementById('fileName').value + '.json', 'text');}
 
-        //jsonWindow.document.write('<pre><code class="javascript"><code class="keyword">' + smtOutput + '</code></pre>');
+	//jsonWindow.document.write('<pre><code class="javascript"><code class="keyword">' + smtOutput + '</code></pre>');
+
+    },
+    loadJSON: function() {
+
+	
+    },
+    saveJSON: function() {
+        let nameOfFile = ''
+        smtOutput = ''
+        optimization = ''
+        preference = ''
+        // var windowFeatures = 'menubar=no,location=no,resizable=yes,scrollbars=yes,status=no';
+        // var windowName = _.uniqueId('json_output');
+        // var jsonWindow = window.open('', windowName, windowFeatures);
+
+        // Keep this if we ever need to see the json output.
+        //jsonWindow.document.write(JSON.stringify(graph.toJSON()));
+
+        jsonOfGraph = graph.toJSON();
+	var jsonString = JSON.stringify(graph.toJSON());
+
+        // Main function works here
+        smtize();
+	if (document.getElementById('fileName').value === '' || typeof document.getElementById('fileName').value === 'undefined') {
+	    download(jsonString, 'output.json', 'text');
+        } else {
+	    download(jsonString, document.getElementById('fileName').value + '.json', 'text');}
+
+	//jsonWindow.document.write('<pre><code class="javascript"><code class="keyword">' + smtOutput + '</code></pre>');
 
     },
 
@@ -752,17 +788,17 @@ var toolbarCommands = {
 
         gdAuth(function() {
 
-            showStatus('loading..', 'info');
-            gdLoad(function(name, content) {
+	    showStatus('loading..', 'info');
+	    gdLoad(function(name, content) {
                 try {
-                    var json = JSON.parse(content);
-                    graph.fromJSON(json);
-                    document.getElementById('fileName').value = name.replace(/.json$/, '');
-                    showStatus('loaded.', 'success');
+		    var json = JSON.parse(content);
+		    graph.fromJSON(json);
+		    document.getElementById('fileName').value = name.replace(/.json$/, '');
+		    showStatus('loaded.', 'success');
                 } catch (e) {
-                    showStatus('failed.', 'error');
+		    showStatus('failed.', 'error');
                 }
-            });
+	    });
 
         }, true);
     },
@@ -771,23 +807,24 @@ var toolbarCommands = {
 
         gdAuth(function() {
 
-            showStatus('saving..', 'info');
-            var name = document.getElementById('fileName').value;
-            gdSave(name, JSON.stringify(graph.toJSON()), function(file) {
+	    showStatus('saving..', 'info');
+	    var name = document.getElementById('fileName').value;
+	    gdSave(name, JSON.stringify(graph.toJSON()), function(file) {
 
                 if (file) {
-                    showStatus('saved.', 'success');
+		    showStatus('saved.', 'success');
                 } else {
-                    showStatus('failed.', 'error');
+		    showStatus('failed.', 'error');
                 }
-            });
+	    });
 
         }, true);
     }
 };
 
 toolbar.on({
-    'tojson:pointerclick': toolbarCommands.toJSON,
+    'tojson:pointerclick': toolbarCommands.saveJSON,
+    'loadjson:pointerclick': toolbarCommands.loadJSON,
     'optimization:pointerclick': toolbarCommands.optimizationScheme,
     'downloadsmt2:pointerclick': toolbarCommands.downloadSmt2,
     'load:pointerclick': toolbarCommands.loadGraph,

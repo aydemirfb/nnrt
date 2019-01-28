@@ -1,6 +1,24 @@
 window.toolbarConfig = {
 
     tools: [
+	{
+            type: 'button',
+            name: 'tojson',
+            attrs: {
+                button: {
+                    'data-tooltip': 'Save JSON',
+                }
+            }
+	},
+	{
+            type: 'button',
+            name: 'loadjson',
+            attrs: {
+                button: {
+                    'data-tooltip': 'Load JSON',
+                }
+            }
+	},
         {
             type: 'button',
             name: 'load',
