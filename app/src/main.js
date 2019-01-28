@@ -1,6 +1,4 @@
 joint.setTheme('bpmn');
-const fs = require('fs');
-const fileDialog = require('file-dialog');
 
 var example = window.example;
 var gdAuth = window.gdAuth;
@@ -8,7 +6,6 @@ var gdLoad = window.gdLoad;
 var gdSave = window.gdSave;
 var inputs = window.inputs;
 var toolbarConfig= window.toolbarConfig;
-const modelsdir = '../models/';
 
 var graph = new joint.dia.Graph({ type: 'bpmn' });
 
@@ -754,10 +751,7 @@ var toolbarCommands = {
 	//jsonWindow.document.write('<pre><code class="javascript"><code class="keyword">' + smtOutput + '</code></pre>');
 
     },
-    loadJSON: function() {
-
-	
-    },
+    
     saveJSON: function() {
         let nameOfFile = ''
         smtOutput = ''
@@ -776,9 +770,9 @@ var toolbarCommands = {
         // Main function works here
         smtize();
 	if (document.getElementById('fileName').value === '' || typeof document.getElementById('fileName').value === 'undefined') {
-	    download(jsonString, 'output.json', 'text');
+            download(jsonString, 'output.json', 'text');
         } else {
-	    download(jsonString, document.getElementById('fileName').value + '.json', 'text');}
+            download(jsonString, document.getElementById('fileName').value + '.json', 'text');}
 
 	//jsonWindow.document.write('<pre><code class="javascript"><code class="keyword">' + smtOutput + '</code></pre>');
 
@@ -788,17 +782,17 @@ var toolbarCommands = {
 
         gdAuth(function() {
 
-	    showStatus('loading..', 'info');
-	    gdLoad(function(name, content) {
+            showStatus('loading..', 'info');
+            gdLoad(function(name, content) {
                 try {
-		    var json = JSON.parse(content);
-		    graph.fromJSON(json);
-		    document.getElementById('fileName').value = name.replace(/.json$/, '');
-		    showStatus('loaded.', 'success');
+                    var json = JSON.parse(content);
+                    graph.fromJSON(json);
+                    document.getElementById('fileName').value = name.replace(/.json$/, '');
+                    showStatus('loaded.', 'success');
                 } catch (e) {
-		    showStatus('failed.', 'error');
+                    showStatus('failed.', 'error');
                 }
-	    });
+            });
 
         }, true);
     },
@@ -807,16 +801,16 @@ var toolbarCommands = {
 
         gdAuth(function() {
 
-	    showStatus('saving..', 'info');
-	    var name = document.getElementById('fileName').value;
-	    gdSave(name, JSON.stringify(graph.toJSON()), function(file) {
+            showStatus('saving..', 'info');
+            var name = document.getElementById('fileName').value;
+            gdSave(name, JSON.stringify(graph.toJSON()), function(file) {
 
                 if (file) {
-		    showStatus('saved.', 'success');
+                    showStatus('saved.', 'success');
                 } else {
-		    showStatus('failed.', 'error');
+                    showStatus('failed.', 'error');
                 }
-	    });
+            });
 
         }, true);
     }
