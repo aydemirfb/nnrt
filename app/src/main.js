@@ -18,9 +18,7 @@ var jsonOfGraph = {};
 let smtOutput = '';
 let preference = `
 ;;%%\r\n;;Preference:\r\n`;
-let optimization = `
-;;%%\r\n;;Optimization:\r\n;;%%\r\n(minimize unsat_requirements)\r\n(minimize sat_tasks)\r\n(check-sat)\r\n(set-model 1)\r\n(get-model)\r\n(exit)\r\n
-`;
+let optimization = ` ;;%%\r\n;;Optimization:\r\n;;%%\r\n(maximize (+ NCC PVC))\r\n(maximize (+ pen.auto ben.auto))\r\n(minimize unsat_requirements)\r\n(check-sat)\r\n(load-objective-model 0)\r\n(get-model)\r\n(exit)\r\n`;
 let scheme = ''
 
 
@@ -570,7 +568,7 @@ function smtize() {
                 c.relation = 'none';
             }
     
-            smtOutput += '(assert-soft (not ' + c.name + ') :weight ' + c.weight + ' :id ' + c.relation + ')\r\n';
+            smtOutput += '(assert-soft (not ' + c.name + ') :weight ' + '1'        + ' :id ' + c.relation + ')\r\n';
         }
         
     });
@@ -581,7 +579,7 @@ function smtize() {
                 if (model.attributes.type === 'standard.Goal') {
                     model.attributes.attrs['.label'].weight.forEach((w) => {
                         console.log(w)
-                        smtOutput += '(assert-soft ' + model.attributes.attrs.label.text + ' :weight ' + w.attrs.text.body + ' :id ' + w.attrs.text.title + ')\r\n';
+                        smtOutput += '(assert-soft (not ' + model.attributes.attrs.label.text + ') :weight ' + w.attrs.text.body + ' :id ' + w.attrs.text.title + ')\r\n';
                     })
                 }
  
@@ -630,35 +628,26 @@ function smtize() {
 
     console.log({leafs})
     console.log({tops})
+    // Real functions
+    let reals = '(declare-fun pen.auto () Real)\r\n (assert (= pen.auto (- pen 0)))\r\n (declare-fun ben.auto () Real)\r\n (assert (= ben.auto (- ben 0)))\r\n (declare-fun effort.auto () Real)\r\n (assert (= effort.auto (- effort 0)))\r\n';
+    
+    // effort
+    let eff = '\r\n (assert (<= effort 110))\r\n (assert-soft (<= 90 effort))\r\n'
+
+ 
     
     // Optimization scheme
 
     if (leafs.length < 1) {
-        optimization = `
-    ;;%%\r\n
-    ;;Optimization:\r\n
-    ;;%%\r\n
-    (minimize unsat_requirements)\r\n
-    (check-sat)\r\n
-    (load-objective-model 0)\r\n
-    (get-model)\r\n
-    (exit)\r\n`
+        optimization = ` ;;%%\r\n;;Optimization:\r\n;;%%\r\n(maximize (+ NCC PVC))\r\n(maximize (+ pen.auto ben.auto))\r\n(minimize unsat_requirements)\r\n(check-sat)\r\n(load-objective-model 0)\r\n(get-model)\r\n(exit)\r\n`;
     } else {
-        optimization = `
-    ;;%%
-    ;;Optimization:
-    ;;%%
-    (minimize unsat_requirements)
-    (minimize sat_tasks)
-    (check-sat)
-    (get-objectives)
-    (load-objective-model 1)
-    (get-model)
-    (exit)`
+        optimization = ` ;;%%\r\n;;Optimization:\r\n;;%%\r\n(maximize (+ NCC PVC))\r\n(maximize (+ pen.auto ben.auto))\r\n(minimize unsat_requirements)\r\n(check-sat)\r\n(load-objective-model 0)\r\n(get-model)\r\n(exit)\r\n`;
     }
-
-    scheme = preference + optimization;
-    smtOutput += scheme;
+    scheme = optimization;
+    smtOutput += preference ;
+    smtOutput += reals;
+    smtOutput += eff;
+    smtOutput += optimization;
 
     // Well formedness checks happen here
 
@@ -667,7 +656,7 @@ function smtize() {
         smtOutput = 'There are duplicate values in the goal model, please rename your Goals or Refinements uniquely and try again';
         return
     }
-   
+    
     // File download is happening here
     if (document.getElementById('fileName').value === '' || typeof document.getElementById('fileName').value === 'undefined') {
         //download(smtOutput, 'output.smt2', 'text');
